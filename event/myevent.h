@@ -24,6 +24,7 @@
 
 #include "../message/message.h"
 #include "../utils/utils.h"
+#include "../timer/heaptimer.h"
 
 // 所有事件的基类
 class EventBase{

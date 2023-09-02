@@ -4,10 +4,12 @@
 #include <sys/types.h>
 #include <stdexcept>
 #include <errno.h>
+#include <memory>
 
 #include "../threadpool/threadpool.h"
+#include "../timer/heaptimer.h"
 
-#define MAX_RESEVENT_SIZE 1024   // 事件的最大个数
+#define MAX_RESEVENT_SIZE 65536   // 事件的最大个数
 
 class WebServer{
 public:
@@ -43,12 +45,15 @@ private:
     sockaddr_in m_serverAddr;         // 服务端套接字绑定的地址信息
     static int m_epollfd;             // I/O 复用的 epoll 例程文件描述符
     static bool isStop;               // 是否暂停服务器
+    int timeout;
 
     static int eventHandlerPipe[2];   // 用于统一事件源传递信号的管道
 
     epoll_event resEvents[MAX_RESEVENT_SIZE]; // 保存 epoll_wait 结果的数组
     
     ThreadPool *threadPool;
+
+    std::unique_ptr<HeapTimer> timer;
 };
 
 #endif

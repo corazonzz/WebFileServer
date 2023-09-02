@@ -17,7 +17,13 @@ static int tnum = 0;
 class ThreadPool{
 public:
     // 初始化线程池、互斥访问时间队列的互斥量、表示队列中事件的信号量
-    ThreadPool(int threadNum);
+//    ThreadPool(int threadNum);
+    static ThreadPool* getThreadPool(){
+        if(threadPool_ == nullptr){
+            threadPool_ = new ThreadPool(5);
+        }
+        return threadPool_;
+    }
     ~ThreadPool();
 public:
     // 向事件队列中添加一个待处理的事件，线程池中的线程会循环处理其中的事件
@@ -33,7 +39,8 @@ private:
 private:
     int m_threadNum;                  // 线程池中的线程个数
     pthread_t *m_threads;             // 保存线程池中的所有线程
-    
+    ThreadPool(int threadNum);
+    static ThreadPool* threadPool_;
     std::queue<EventBase*> m_workQueue;  // 保存所有待处理的事件
     pthread_mutex_t queueLocker;     // 用于互斥访问事件队列的锁
     sem_t queueEventNum;             // 表示队列中事件个数变化的信号量

@@ -77,7 +77,6 @@ public:
     void addHeaderOpt(const std::string &headLine){
         static std::istringstream lineStream;
         lineStream.str(headLine);    // 以 istringstream 的方式处理头部选项
-
         std::string key, value;      // 保存键和值的临时量
 
         lineStream >> key;           // 获取 key

@@ -1,11 +1,13 @@
 #include "./fileserver/fileserver.h"
+#include <chrono>
 
+ThreadPool* ThreadPool::threadPool_ = nullptr;
 int main(void){
 
     WebServer webserver;
 
     // 创建线程池
-    int ret = webserver.createThreadPool(4);
+    int ret = webserver.createThreadPool(5);
     if(ret != 0){
         std::cout << outHead("error") << "创建线程池失败" << std::endl;
         return -1;
@@ -38,6 +40,5 @@ int main(void){
         std::cout << outHead("error") << "epoll 例程监听失败" << std::endl;
         return -5;
     }
-    
     return 0;
 }

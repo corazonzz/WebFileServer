@@ -18,12 +18,13 @@ std::string outHead(const std::string logType);
 
 
 // 向 epollfd 添加文件描述符，并指定监听事件。edgeTrigger：边缘触发，isOneshot：EPOLLONESHOT
-int addWaitFd(int epollFd, int newFd, bool edgeTrigger = false, bool isOneshot = false);
+int addWaitFd(int epollFd, int newFd, bool edgeTrigger = false, bool isOneshot = true);
 
 // 修改正在监听文件描述符的事件。edgeTrigger:是否为边沿触发，resetOneshot:是否设置 EPOLLONESHOT，addEpollout:是否监听输出事件
-int modifyWaitFd(int epollFd, int modFd, bool edgeTrigger = false, bool resetOneshot = false, bool addEpollout = false );
+int modifyWaitFd(int epollFd, int modFd, bool edgeTrigger = false, bool resetOneshot = true, bool addEpollout = false );
 
 // 删除正在监听的文件描述符
+
 int deleteWaitFd(int epollFd, int deleteFd);
 
 // 设置文件描述符为非阻塞

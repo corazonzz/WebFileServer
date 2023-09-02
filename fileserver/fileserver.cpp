@@ -1,10 +1,11 @@
 #include "fileserver.h"
 
-WebServer::WebServer(){
+WebServer::WebServer():timer(new HeapTimer()){
 
 }
 WebServer::~WebServer(){ 
-
+    close(m_listenfd);
+    isStop = true;
 }
 
 // 创建套接字等待客户端连接，并开启监听
@@ -45,7 +46,7 @@ int WebServer::createListenFd(int port, const char* ip){
     }
 
     // 开启监听
-    ret = listen(m_listenfd, 5);
+    ret = listen(m_listenfd,20);
     if(ret != 0){
         std::cout << outHead("error") << "套接字开启监听失败" << std::endl;
         return -4;
@@ -69,7 +70,7 @@ int WebServer::epollAddListenFd(){
     // ListenFd 设置为 边沿触发、非阻塞
     setNonBlocking(m_listenfd);
     // 因为需要将连接客户端的任务交给子线程处理，所以设置为边沿触发，避免子线程还没有接受连接时事件一直产生
-    int ret = addWaitFd(m_epollfd, m_listenfd, true, false);
+    int ret = addWaitFd(m_epollfd, m_listenfd, false, true);
     if(ret != 0){
         std::cout << outHead("error") << "添加监控 Listen 套接字失败" << std::endl;
         return -1;
@@ -177,7 +178,7 @@ int WebServer::waitEpoll(){
     isStop = false;
 
     // 创建事件保存事件的临时指针
-    EventBase *event = nullptr;
+    std::shared_ptr<EventBase> event;
 
     while(!isStop){
         int resNum = epoll_wait(m_epollfd, resEvents, MAX_RESEVENT_SIZE, -1);
@@ -190,9 +191,9 @@ int WebServer::waitEpoll(){
         for(int i = 0; i < resNum; ++i){
             int resfd = resEvents[i].data.fd;
             if(resfd == m_listenfd){
-                std::cout << outHead("info") << "有新的连接请求" << std::endl;
+                //std::cout << outHead("info") << "有新的连接请求" << std::endl;
                 // 构建接受连接的事件
-                event = new AcceptConn(m_listenfd, m_epollfd);
+                event = std::make_shared<EventBase>(AcceptConn(m_listenfd, m_epollfd));
                 eventType = "新连接事件";
             }else if((resfd == eventHandlerPipe[0]) && (resEvents[i].events & EPOLLIN)){
                 // 如果有事件发生，执行事件处理函数
@@ -200,22 +201,22 @@ int WebServer::waitEpoll(){
                 eventType = "新信号事件";
             }else if(resEvents[i].events & EPOLLIN){
                 // 构建读取客户端数据的事件
-                event = new HandleRecv(resEvents[i].data.fd, m_epollfd);
+                event = std::make_shared<EventBase>(HandleRecv(resEvents[i].data.fd, m_epollfd));
                 eventType = "新可读事件";
 
             }else if(resEvents[i].events & EPOLLOUT){
                 // 套接字可以发送数据，构建可以发送数据的事件
-                event = new HandleSend(resEvents[i].data.fd, m_epollfd);
+                event = std::make_shared<EventBase>(HandleSend(resEvents[i].data.fd, m_epollfd));
                 eventType = "新可写事件";
             }
             if(event == nullptr){
                 continue;
             }
             // 将事件加入线程池的待处理队列。在线程池中，事件执行完后销毁事件，可以修改为智能指针自动释放
-            threadPool->appendEvent(event, eventType);
+            threadPool->appendEvent(event.get(), eventType);
             
             // 将 event 置空
-            event = nullptr;
+            //event = nullptr;
         }
     }
     return 0;
@@ -224,7 +225,7 @@ int WebServer::waitEpoll(){
 // 创建线程池
 int WebServer::createThreadPool(int threadNum){
     try{
-        threadPool = new ThreadPool(threadNum);
+        threadPool = ThreadPool::getThreadPool();
     }catch(std::runtime_error &err){
         std::cout << err.what() << std::endl;
     }
